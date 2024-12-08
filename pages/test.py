@@ -109,7 +109,6 @@ def taste_preference_survey():
     if st.button('맛 프로필 완성하기'):
         st.success('맛 프로필이 성공적으로 저장되었습니다! 👍')
         preference_str = generate_preference_string()
-        st.text(preference_str)
 
 def generate_preference_string():
     preferences = st.session_state.preferences
