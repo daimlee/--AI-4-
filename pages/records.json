@@ -58,5 +58,35 @@
         "title": "후지라멘",
         "address": "부산광역시 중구 중앙동4가 40-22 1층후지라멘",
         "link": ""
+    },
+    {
+        "profile": "ㅁㅇ: 매운 한식",
+        "title": "매운수제비",
+        "address": "부산광역시 연제구 연산동 1124-2",
+        "link": "https://smartstore.naver.com/hot_hot"
+    },
+    {
+        "profile": "ㅁㅇ: 매운 한식",
+        "title": "정성매운갈비찜 수영점",
+        "address": "부산광역시 수영구 수영동 17 1층 정성매운갈비찜",
+        "link": ""
+    },
+    {
+        "profile": "ㅁㅇ: 매운 한식",
+        "title": "매운 양재기찜갈비",
+        "address": "부산광역시 부산진구 범천동 854-8",
+        "link": ""
+    },
+    {
+        "profile": "ㅁㅇ: 매운 한식",
+        "title": "짚신매운갈비찜 광안점",
+        "address": "부산광역시 수영구 광안동 159-2 2층",
+        "link": ""
+    },
+    {
+        "profile": "ㅁㅇ: 매운 한식",
+        "title": "짚신매운갈비찜 서면롯데점",
+        "address": "부산광역시 부산진구 부전동 516-32 짚신매운갈비찜",
+        "link": "http://www.zipsinfood.co.kr/"
     }
 ]
