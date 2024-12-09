@@ -3,11 +3,27 @@ import requests
 from dotenv import load_dotenv
 import os
 import re
+import json
 
 # 환경 변수 로드
 load_dotenv()
 PLACE_CLIENT_ID = os.getenv("PLACE_CLIENT_ID")  # Place Search API Client ID
 PLACE_CLIENT_SECRET = os.getenv("PLACE_CLIENT_SECRET")  # Place Search API Client Secret
+
+# 데이터 저장 파일 경로
+RECORD_FILE = "records.json"
+
+# 기록 데이터를 로드하는 함수
+def load_records():
+    if os.path.exists(RECORD_FILE):
+        with open(RECORD_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    return []
+
+# 기록 데이터를 저장하는 함수
+def save_records(records):
+    with open(RECORD_FILE, "w", encoding="utf-8") as file:
+        json.dump(records, file, ensure_ascii=False, indent=4)
 
 # HTML 태그 제거 함수
 def clean_html(text):
@@ -16,7 +32,7 @@ def clean_html(text):
 
 # Place Search API (맛집 검색)
 def search_nearby_places(query):
-    """검색어와 좌표를 기반으로 맛집 정보를 반환"""
+    """검색어를 기반으로 맛집 정보를 반환"""
     url = "https://openapi.naver.com/v1/search/local.json"
     headers = {
         "X-Naver-Client-Id": PLACE_CLIENT_ID,
@@ -36,7 +52,7 @@ def search_nearby_places(query):
 
 # 맛 프로필 생성하기
 def taste_preference_survey():
-    st.title('🍽️맛 프로필 만들기')
+    st.title('🍽️ 맛 프로필 만들기')
     
     if 'preferences' not in st.session_state:
         st.session_state.preferences = {}
@@ -66,9 +82,7 @@ def taste_preference_survey():
     st.session_state.preferences['cuisine_preferences'] = cuisine_option
 
     if st.button('맛 프로필 완성하기'):
-        
         with st.spinner('맛 프로필을 생성하는 중...'):
-            
             preference_str = generate_preference_string(profile_title)
             st.session_state.profile_list.append({'title': profile_title, 'preferences': preference_str})
             st.success(f'맛 프로필이 성공적으로 저장되었습니다! 🎉')
@@ -87,9 +101,10 @@ def generate_preference_string(profile_title):
     
     return f"{profile_title}: {preference_str}"
 
-# 맛집 추천
+# 맛집 추천(지역 검색)
 def recommend_restaurants():
-    st.title('🍽️ 맛집 추천')
+    # 지역 검색 페이지 제목 변경
+    st.title('📍 지역 검색')
 
     if 'profile_list' not in st.session_state or len(st.session_state.profile_list) == 0:
         st.warning('먼저 맛 프로필을 생성해주세요!')
@@ -97,12 +112,15 @@ def recommend_restaurants():
 
     # 맛 프로필 선택
     profile_titles = [profile['title'] for profile in st.session_state.profile_list]
-    selected_profile_title = st.selectbox('맛 프로필을 선택하세요', profile_titles)
+    selected_profile_title = st.selectbox('프로필을 선택하세요', profile_titles)
 
     selected_profile = next(profile for profile in st.session_state.profile_list if profile['title'] == selected_profile_title)
     
-    st.write(f"선택된 맛 프로필: {selected_profile['preferences']}")
-    address = st.text_input("주소를 입력하세요")
+    st.write(f"선택한 선호 프로필: {selected_profile['preferences']}")
+
+    # "코드를 입력하세요" -> "지역을 입력하세요"
+    address = st.text_input("지역을 입력하세요")
+
     # 맛 프로필 정보 가져오기
     spicy_level = st.session_state.preferences.get('spicy_level', 5)
     cuisine_preferences = st.session_state.preferences.get('cuisine_preferences', '한식')
@@ -114,34 +132,71 @@ def recommend_restaurants():
         spicy_description = "매운"
     else:
         spicy_description = ""
-    # 맛집 추천
-    if st.button("추천받기"):
+
+    # "다시 읽기" 버튼 -> "검색하기" 버튼
+    if st.button("검색하기"):
         try:
             query = f"{address} {spicy_description} {cuisine_preferences} 맛집"
             places = search_nearby_places(query)
             st.subheader("추천 맛집 목록")
-            st.markdown("<p style='color: yellow;'>⚠️ 상세보기는 링크로 제대로 된 링크가 포함되어 있지 않을 수 있습니다.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: yellow;'>⚠️ 상세보기 링크는 실제 운영 링크와 다를 수 있습니다.</p>", unsafe_allow_html=True)
+            
+            records = load_records()
+            
             for place in places:
                 # HTML 태그 제거
                 cleaned_title = clean_html(place['title'])
                 cleaned_address = clean_html(place['address'])
                 
                 st.write(f"**{cleaned_title}** - {cleaned_address} ([상세보기]({place['link']}))")
+                
+                # 기록 추가
+                records.append({
+                    "profile": selected_profile['preferences'],
+                    "title": cleaned_title,
+                    "address": cleaned_address,
+                    "link": place['link']
+                })
+            
+            # 기록 저장
+            save_records(records)
+            st.success("추천 결과가 기록되었습니다!")
             
         except Exception as e:
             st.error(f"오류 발생: {e}")
 
+# 기록 페이지
+def record_page():
+    # 맛프로필 만들기 -> 기록페이지
+    st.title("📝 기록페이지")
+    records = load_records()
+    profiles = {record["profile"] for record in records}
+    
+    if profiles:
+        for profile in profiles:
+            with st.expander(f"{profile}"):
+                profile_records = [record for record in records if record["profile"] == profile]
+                
+                if profile_records:
+                    for record in profile_records:
+                        st.write(f"**{record['title']}** - {record['address']} ([상세보기]({record['link']}))")
+                        st.write("---")
+                else:
+                    st.info("해당 프로필에 대한 기록이 없습니다.")
+    else:
+        st.info("아직 기록된 내용이 없습니다.")
 
-
+# 메인 함수
 def main():
     st.sidebar.title("🍴 메뉴")
-    menu = st.sidebar.radio("탭 선택", ["맛 프로필", "맛집 추천"])
+    menu = st.sidebar.radio("탭 선택", ["맛 프로필", "지역 검색", "기록"])
 
     if menu == "맛 프로필":
         taste_preference_survey()
-    
-    if menu == "맛집 추천":
+    elif menu == "지역 검색":
         recommend_restaurants()
+    elif menu == "기록":
+        record_page()
 
 if __name__ == '__main__':
     main()
