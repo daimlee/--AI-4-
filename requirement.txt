@@ -1,0 +1,6 @@
+requirement
+streamlit
+python-dotenv
+pandas
+numpy
+pip install -r requirements.txt
